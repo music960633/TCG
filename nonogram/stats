@@ -1,0 +1,16 @@
+generate: ./boardgen.py n 100 0.7 0.3 12345
+
+n   DFS+preprocess+imply  DFS+imply   DFS+preprocess  DFS
+8   0.02                  0.02        0.20            0.22
+9   0.03                  0.03        0.92            0.91
+10  0.03                  0.03        3.61            3.69
+11  0.04                  0.04        97.7            102
+12  0.06                  0.06        TO              TO
+13  0.09                  0.09        TO              TO
+14  0.45                  0.45        TO              TO
+15  0.34                  0.39        TO              TO
+16  1.22                  1.71        TO              TO
+17  3.39                  3.40        TO              TO
+18  39.1                  37.8        TO              TO
+19  184                   183         TO              TO
+20  TO                    TO          TO              TO
