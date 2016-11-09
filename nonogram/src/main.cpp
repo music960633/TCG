@@ -56,12 +56,15 @@ void splitStr(std::string s, std::vector<std::string>& tokens) {
   }
 }
 
+inline bool getBit(int& s, int idx) { return (s >> idx) & 1; }
+inline void set1(int& s, int idx) { s |= (1 << idx); }
+inline void set0(int& s, int idx) { s &= (~(1 << idx)); }
+
 class Solver {
  public:
   explicit Solver(int n): n_(n) {
-    map_.resize(n_ + 1);
-    for (int i = 0; i <= n_; ++i)
-      map_[i].resize(n_ + 1);
+    map_.resize(n_);
+    unk_.resize(n_);
     row_.resize(n_);
     for (int i = 0; i < n_; ++i)
       row_[i].clear();
@@ -100,20 +103,19 @@ class Solver {
     return true;
   }
   void init() {
-    for (int i = 0; i <= n_; ++i)
-      for (int j = 0; j <= n_; ++j)
-        map_[i][j] = ((i == n_ || j == n_) ? 0 : -1);
+    for (int i = 0; i < n_; ++i)
+      unk_[i] = (1 << n_) - 1;
   }
   void solve() {
     init();
     preprocess();
-    dfs(map_, 0, 0);
+    dfs(map_, unk_, 0, 0);
   }
   void preprocess() {
-    bool flag = imply(map_, -1, -1);
+    bool flag = imply(map_, unk_, -1, -1);
     assert(flag);
   }
-  bool imply(std::vector<std::vector<int> >& curMap, int x, int y) {
+  bool imply(std::vector<int>& curMap, std::vector<int>& unknown, int x, int y) {
     std::queue<int> qRow, qCol;
     int idx;
     if (x == -1 && y == -1) {
@@ -130,33 +132,24 @@ class Solver {
       if (!qRow.empty()) {
         idx = qRow.front();
         qRow.pop();
-        if (!implyRow(curMap, idx, qCol))
+        if (!implyRow(curMap, unknown, idx, qCol))
           return false;
       }
       if (!qCol.empty()) {
         idx = qCol.front();
         qCol.pop();
-        if (!implyCol(curMap, idx, qRow))
+        if (!implyCol(curMap, unknown, idx, qRow))
           return false;
       }
     }
     return true;
   }
-  bool implyRow(std::vector<std::vector<int> >& curMap, int idx, std::queue<int>& qCol) {
-    bool done = true;
-    for (int i = 0; i < n_; ++i)
-      if (curMap[idx][i] == -1)
-        done = false;
-    if (done) return true;
+  bool implyRow(std::vector<int>& curMap, std::vector<int>& unknown, int idx, std::queue<int>& qCol) {
+    if (unknown[idx] == 0) return true;
     const std::vector<int>& v = mp[row_[idx]];
-    int black = 0, white = 0;
+    int black = curMap[idx] & (~unknown[idx]);
+    int white = (~curMap[idx]) & (~unknown[idx]);
     int imply_black = ~0, imply_white = ~0;
-    for (int i = 0; i < n_; ++i) {
-      if (curMap[idx][i] == 1)
-        black |= (1 << i);
-      else if (curMap[idx][i] == 0)
-        white |= (1 << i);
-    }
     for (int i = 0; i < v.size(); ++i) {
       if (((v[i] & black) == black) && (((~v[i]) & white) == white)) {
         imply_black &= v[i];
@@ -166,33 +159,35 @@ class Solver {
     if (imply_black == ~0)
       return false;
     for (int i = 0; i < n_; ++i) {
-      if (curMap[idx][i] == -1) {
-        if ((imply_black >> i) & 1) {
-          curMap[idx][i] = 1;
+      if (getBit(unknown[idx], i) == 1) {
+        if (getBit(imply_black, i) == 1) {
+          set0(unknown[idx], i);
+          set1(curMap[idx], i);
           qCol.push(i);
         }
-        else if ((imply_white >> i) & 1) {
-          curMap[idx][i] = 0;
+        else if (getBit(imply_white, i) == 1) {
+          set0(unknown[idx], i);
+          set0(curMap[idx], i);
           qCol.push(i);
         }
       }
     }
     return true;
   }
-  bool implyCol(std::vector<std::vector<int> >& curMap, int idx, std::queue<int>& qRow) {
+  bool implyCol(std::vector<int>& curMap, std::vector<int>& unknown, int idx, std::queue<int>& qRow) {
     bool done = true;
     for (int i = 0; i < n_; ++i)
-      if (curMap[i][idx] == -1)
+      if (getBit(unknown[i], idx) == 1)
         done = false;
     if (done) return true;
     const std::vector<int>& v = mp[col_[idx]];
     int black = 0, white = 0;
     int imply_black = ~0, imply_white = ~0;
     for (int i = 0; i < n_; ++i) {
-      if (curMap[i][idx] == 1)
-        black |= (1 << i);
-      else if (curMap[i][idx] == 0)
-        white |= (1 << i);
+      if (getBit(unknown[i], idx) == 0 && getBit(curMap[i], idx) == 1)
+        set1(black, i);
+      else if (getBit(unknown[i], idx) == 0 && getBit(curMap[i], idx) == 0)
+        set1(white, i);
     }
     for (int i = 0; i < v.size(); ++i) {
       if (((v[i] & black) == black) && (((~v[i]) & white) == white)) {
@@ -203,22 +198,25 @@ class Solver {
     if (imply_black == ~0)
       return false;
     for (int i = 0; i < n_; ++i) {
-      if (curMap[i][idx] == -1) {
-        if ((imply_black >> i) & 1) {
-          curMap[i][idx] = 1;
+      if (getBit(unknown[i], idx) == 1) {
+        if (getBit(imply_black, i) == 1) {
+          set0(unknown[i], idx);
+          set1(curMap[i], idx);
           qRow.push(i);
         }
-        else if ((imply_white >> i) & 1) {
-          curMap[i][idx] = 0;
+        else if (getBit(imply_white, i) == 1) {
+          set0(unknown[i], idx);
+          set0(curMap[i], idx);
           qRow.push(i);
         }
       }
     }
     return true;
   }
-  bool dfs(std::vector<std::vector<int> >& prevMap, int x, int y) {
+  bool dfs(std::vector<int>& prevMap, std::vector<int>& prevUnk, int x, int y) {
     if (x == n_){
       map_ = prevMap;
+      unk_ = prevUnk;
       return true;
     }
     int nx, ny;
@@ -230,17 +228,21 @@ class Solver {
       nx = x;
       ny = y + 1;
     }
-    if (prevMap[x][y] != -1) {
-      return dfs(prevMap, nx, ny);
+    if (getBit(prevUnk[x], y) == 0) {
+      return dfs(prevMap, prevUnk, nx, ny);
     }
-    std::vector<std::vector<int> > curMap = prevMap;
-    curMap[x][y] = 1;
-    if (imply(curMap, x, y) && dfs(curMap, nx, ny)) {
+    std::vector<int> curMap = prevMap;
+    std::vector<int> curUnk = prevUnk;
+    set1(curMap[x], y);
+    set0(curUnk[x], y);
+    if (imply(curMap, curUnk, x, y) && dfs(curMap, curUnk, nx, ny)) {
       return true;
     }
     curMap = prevMap;
-    curMap[x][y] = 0;
-    if (imply(curMap, x, y) && dfs(curMap, nx, ny)) {
+    curUnk = prevUnk;
+    set0(curMap[x], y);
+    set0(curUnk[x], y);
+    if (imply(curMap, curUnk, x, y) && dfs(curMap, curUnk, nx, ny)) {
       return true;
     }
     return false;
@@ -248,7 +250,7 @@ class Solver {
   void display() {
     for (int i = 0; i < n_; ++i) {
       for (int j = 0; j < n_; ++j)
-        std::cout << (char)(map_[i][j] == -1? 'X' : ('0' + map_[i][j]));
+        std::cout << (char)(((unk_[i] >> j) & 1)? 'X' : ('0' + ((map_[i] >> j) & 1)));
       std::cout << std::endl;
     }
     std::cout << std::endl;
@@ -256,7 +258,8 @@ class Solver {
 
  private:
   int                             n_;
-  std::vector<std::vector<int> >  map_;
+  std::vector<int>                map_;
+  std::vector<int>                unk_;
   std::vector<std::vector<int> >  row_, col_;
 };
 
