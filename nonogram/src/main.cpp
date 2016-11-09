@@ -261,8 +261,8 @@ class Solver {
 };
 
 int main(int argc, char** argv) {
-  if (argc != 3) {
-    fprintf(stderr, "Usage: %s <n> <DFS>\n", argv[0]);
+  if (argc != 2) {
+    fprintf(stderr, "Usage: %s <n>\n", argv[0]);
     return 0;
   }
   int n = str2int(argv[1]);
@@ -271,19 +271,13 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  Solver *solver = NULL;
-  if (!strcmp(argv[2], "DFS")) {
-    solver = new Solver(n);
+  Solver *solver = new Solver(n);
+  buildMap(n);
+  while (solver->read()) {
+    solver->solve();
+    solver->display();
   }
-
-  if (solver != NULL) {
-    buildMap(n);
-    while (solver->read()) {
-      solver->solve();
-      solver->display();
-    }
-    delete solver;
-  }
+  delete solver;
 
   return 0;
 }
