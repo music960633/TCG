@@ -108,7 +108,9 @@ class Solver {
   }
   void solve() {
     init();
+#ifdef PREPROCESS
     preprocess();
+#endif
     dfs(map_, unk_, 0, 0);
   }
   void preprocess() {
@@ -145,7 +147,7 @@ class Solver {
     return true;
   }
   bool implyRow(std::vector<int>& curMap, std::vector<int>& unknown, int idx, std::queue<int>& qCol) {
-    if (unknown[idx] == 0) return true;
+    if (unknown[idx] == 0) return check(curMap[idx], row_[idx]);
     const std::vector<int>& v = mp[row_[idx]];
     int black = curMap[idx] & (~unknown[idx]);
     int white = (~curMap[idx]) & (~unknown[idx]);
@@ -158,6 +160,7 @@ class Solver {
     }
     if (imply_black == ~0)
       return false;
+#ifdef IMPLICATION
     for (int i = 0; i < n_; ++i) {
       if (getBit(unknown[idx], i) == 1) {
         if (getBit(imply_black, i) == 1) {
@@ -172,14 +175,19 @@ class Solver {
         }
       }
     }
+#endif
     return true;
   }
   bool implyCol(std::vector<int>& curMap, std::vector<int>& unknown, int idx, std::queue<int>& qRow) {
     bool done = true;
-    for (int i = 0; i < n_; ++i)
+    int s = 0;
+    for (int i = 0; i < n_; ++i) {
       if (getBit(unknown[i], idx) == 1)
         done = false;
-    if (done) return true;
+      else if (getBit(curMap[i], idx) == 1)
+        set1(s, i);
+    }
+    if (done) return check(s, col_[idx]);
     const std::vector<int>& v = mp[col_[idx]];
     int black = 0, white = 0;
     int imply_black = ~0, imply_white = ~0;
@@ -197,6 +205,7 @@ class Solver {
     }
     if (imply_black == ~0)
       return false;
+#ifdef IMPLICATION
     for (int i = 0; i < n_; ++i) {
       if (getBit(unknown[i], idx) == 1) {
         if (getBit(imply_black, i) == 1) {
@@ -211,7 +220,29 @@ class Solver {
         }
       }
     }
+#endif
     return true;
+  }
+  bool check(int s, const std::vector<int>& nums) {
+    int m = nums.size();
+    int cnt = 0, now = 0;
+    for (int i = 0; i < n_; ++i) {
+      if (getBit(s, i) == 1)
+        cnt += 1;
+      else if (cnt != 0) {
+        if (now >= m || cnt != nums[now])
+          return false;
+        now += 1;
+        cnt = 0;
+      }
+    }
+    if (cnt != 0) {
+      if (now >= m || cnt != nums[now])
+        return false;
+      now += 1;
+      cnt = 0;
+    }
+    return now == m;
   }
   bool dfs(std::vector<int>& prevMap, std::vector<int>& prevUnk, int x, int y) {
     if (x == n_){
@@ -235,9 +266,17 @@ class Solver {
     std::vector<int> curUnk = prevUnk;
     set1(curMap[x], y);
     set0(curUnk[x], y);
+#ifdef IMPLICATION
     if (imply(curMap, curUnk, x, y) && dfs(curMap, curUnk, nx, ny)) {
       return true;
     }
+#else
+    std::queue<int> qDummy;
+    if (implyRow(curMap, curUnk, x, qDummy) &&
+        implyCol(curMap, curUnk, y, qDummy) &&
+        dfs(curMap, curUnk, nx, ny))
+      return true;
+#endif
     curMap = prevMap;
     curUnk = prevUnk;
     set0(curMap[x], y);
