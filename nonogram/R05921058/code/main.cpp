@@ -314,11 +314,8 @@ int main(int argc, char** argv) {
   }
 
   Solver *solver = new Solver(n);
-  int counter = 0;
   buildMap(n);
   while (solver->read()) {
-    counter += 1;
-    printf("$%d\n", counter);
     solver->solve();
     solver->display();
   }
