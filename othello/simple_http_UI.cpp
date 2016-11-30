@@ -98,7 +98,7 @@ std::string OTP::get_html(unsigned mode,unsigned time_used)const{
                 op+="\">";
             }
             op+="<img src=\"/p";
-            op+=char('0'+B[i][j]);
+            op+=char('0'+B.getVal(i, j));
             op+="\">";
             if(is_move){
                 op+="</a>";
@@ -110,7 +110,7 @@ std::string OTP::get_html(unsigned mode,unsigned time_used)const{
     op+="code+";
     for(int i=0;i<8;++i){
         for(int j=0;j<8;j++){
-            op+=char('0'+B[i][j]);
+            op+=char('0'+B.getVal(i, j));
         }
     }
     op+=char('0'+B.get_my_tile());
