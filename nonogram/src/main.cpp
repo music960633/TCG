@@ -289,10 +289,9 @@ class Solver {
   void display() {
     for (int i = 0; i < n_; ++i) {
       for (int j = 0; j < n_; ++j)
-        std::cout << (char)(((unk_[i] >> j) & 1)? 'X' : ('0' + ((map_[i] >> j) & 1)));
+        std::cout << (char)(((unk_[i] >> j) & 1)? 'X' : ('0' + ((map_[i] >> j) & 1))) << (j == n_ - 1 ? "" : "\t");
       std::cout << std::endl;
     }
-    std::cout << std::endl;
   }
 
  private:
