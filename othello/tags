@@ -1,0 +1,99 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+B	OTP.h	/^    board B;$/;"	m	class:OTP
+H	OTP.h	/^    history H[128],*HED;$/;"	m	class:OTP
+HED	OTP.h	/^    history H[128],*HED;$/;"	m	class:OTP
+INVALID_SOCKET	my_socket.h	/^    constexpr int INVALID_SOCKET = -1;$/;"	v
+InitSocket	my_socket.h	/^bool skt::InitSocket(const char *ip, int port){$/;"	f	class:skt
+OTP	OTP.h	/^    OTP():B(),HED(H){$/;"	f	class:OTP
+OTP	OTP.h	/^class OTP{$/;"	c
+Recv_r	my_socket.h	/^    char*Recv_r(char*buf,size_t len)const{$/;"	f	class:skt
+Recv_t	my_socket.h	/^    char*Recv_t(char*buf,size_t len,timeval tv)const{$/;"	f	class:skt
+SOCKADDR_IN	my_socket.h	/^    typedef sockaddr_in SOCKADDR_IN;$/;"	t
+SOCKET	my_socket.h	/^    typedef int SOCKET;$/;"	t
+SOCKET_ERROR	my_socket.h	/^    constexpr int SOCKET_ERROR = -1;$/;"	v
+Send_r	my_socket.h	/^    void Send_r(const char*s)const{$/;"	f	class:skt
+Send_r	my_socket.h	/^    void Send_r(const char*s,size_t len)const{$/;"	f	class:skt
+ShowErrorMsg	my_socket.h	/^void ShowErrorMsg(){$/;"	f
+TEST_MODE	simple_http_UI.cpp	/^enum my_mode{VS_MODE=0,TEST_MODE=1};$/;"	e	enum:my_mode	file:
+VS_MODE	simple_http_UI.cpp	/^enum my_mode{VS_MODE=0,TEST_MODE=1};$/;"	e	enum:my_mode	file:
+__board__	board.h	2;"	d
+__my_socket__	my_socket.h	2;"	d
+a	board.h	/^    unsigned char a[8][8];$/;"	m	class:board
+a	simple_http_UI.cpp	/^    std::vector<char>a;$/;"	m	struct:pic_f	file:
+address	my_socket.h	/^    sockaddr_in address;$/;"	m	class:get_sfd
+b	judge.cpp	/^    player&operator=(const player&b) = delete;$/;"	m	struct:player	file:
+b	judge.cpp	/^    player(const player&b) = delete;$/;"	m	struct:player	file:
+board	board.h	/^    board(const char*st,const char*ed){$/;"	f	class:board
+board	board.h	/^    constexpr board():a{$/;"	f	class:board
+board	board.h	/^class board{$/;"	c
+cn	judge.cpp	/^    int cn;$/;"	m	struct:player	file:
+do_genmove	OTP.h	/^    int do_genmove(){$/;"	f	class:OTP
+do_init	OTP.h	/^    void do_init(){$/;"	f	class:OTP
+do_op	OTP.h	/^    bool do_op(const char*cmd,char*out,FILE*myerr){$/;"	f	class:OTP
+do_play	OTP.h	/^    void do_play(int x,int y){$/;"	f	class:OTP
+do_undo	OTP.h	/^    void do_undo(){$/;"	f	class:OTP
+ed	OTP.h	/^    int x,y,pass,tiles_to_flip[27],*ed;$/;"	m	struct:history
+fd	my_socket.h	/^    SOCKET fd;$/;"	m	class:skt
+get_cfd	my_socket.h	/^    SOCKET get_cfd()const{$/;"	f	class:get_sfd
+get_cfd_t	my_socket.h	/^    SOCKET get_cfd_t(timeval tv)const{$/;"	f	class:get_sfd
+get_count	board.h	/^    std::pair<int,int> get_count()const{$/;"	f	class:board
+get_html	simple_http_UI.cpp	/^std::string OTP::get_html(unsigned mode,unsigned time_used)const{$/;"	f	class:OTP
+get_my_tile	board.h	/^    int get_my_tile()const{$/;"	f	class:board
+get_pass	board.h	/^    int get_pass()const{$/;"	f	class:board
+get_score	board.h	/^    int get_score()const{$/;"	f	class:board
+get_sfd	my_socket.h	/^    get_sfd(int port){$/;"	f	class:get_sfd
+get_sfd	my_socket.h	/^class get_sfd{$/;"	c
+get_valid_move	board.h	/^    int*get_valid_move(int*oit)const{$/;"	f	class:board
+history	OTP.h	/^struct history{$/;"	s
+init_socket	my_socket.h	/^bool init_socket(){$/;"	f
+is_game_over	board.h	/^    bool is_game_over()const{$/;"	f	class:board
+is_on_board	board.h	/^inline bool is_on_board(int x,int y){$/;"	f
+is_valid_move	board.h	/^    bool is_valid_move(int x,int y)const{$/;"	f	class:board
+m_tolower	OTP.h	/^constexpr char m_tolower(char c){$/;"	f
+m_tolower	judge.cpp	/^constexpr char m_tolower(char c){$/;"	f
+main	judge.cpp	/^int main(int argc, char*argv[]){$/;"	f
+main	search.cpp	/^int main(int argc, char*argv[]){$/;"	f
+main	simple_http_UI.cpp	/^int main(int argc, char*argv[]){$/;"	f
+mode0	search.cpp	/^void mode0(){$/;"	f
+mode1	search.cpp	/^void mode1(const char*ip,int port){$/;"	f
+my_hash	OTP.h	/^constexpr unsigned my_hash(const char*s,unsigned long long int hv=0){$/;"	f
+my_hash	judge.cpp	/^constexpr unsigned my_hash(const char*s,unsigned long long int hv=0){$/;"	f
+my_mode	simple_http_UI.cpp	/^enum my_mode{VS_MODE=0,TEST_MODE=1};$/;"	g	file:
+my_tile	board.h	/^    int my_tile,op_tile,pass;$/;"	m	class:board
+my_to_string	simple_http_UI.cpp	/^std::string my_to_string(unsigned c,int n){$/;"	f
+my_token	simple_http_UI.cpp	/^std::vector<std::string>my_token(const char*bst,const char*bed,int n){$/;"	f
+name	judge.cpp	/^    char name[1024];$/;"	m	struct:player	file:
+ok	judge.cpp	/^    bool ok;$/;"	m	struct:player	file:
+op_tile	board.h	/^    int my_tile,op_tile,pass;$/;"	m	class:board
+operator =	judge.cpp	/^    player&operator=(player&&b){$/;"	f	struct:player
+operator =	my_socket.h	/^    skt&operator=(skt&&b){$/;"	f	class:skt
+operator []	board.h	/^    const unsigned char*operator[](int x)const{$/;"	f	class:board
+pass	OTP.h	/^    int x,y,pass,tiles_to_flip[27],*ed;$/;"	m	struct:history
+pass	board.h	/^    int my_tile,op_tile,pass;$/;"	m	class:board
+pic	simple_http_UI.cpp	/^}pic[]{$/;"	s	file:
+pic_f	simple_http_UI.cpp	/^    pic_f(const char*fn){$/;"	f	struct:pic_f
+pic_f	simple_http_UI.cpp	/^struct pic_f{$/;"	s	file:
+player	judge.cpp	/^    player(SOCKET fd):name{"unknown"},sk(fd),cn(),ok(fd!=INVALID_SOCKET){}$/;"	f	struct:player
+player	judge.cpp	/^    player(player&&b):sk(std::move(b.sk)),cn(b.cn),ok(b.ok){$/;"	f	struct:player
+player	judge.cpp	/^struct player{$/;"	s	file:
+random_choice	OTP.h	/^template<class RIT>RIT random_choice(RIT st,RIT ed){$/;"	f
+sfd	my_socket.h	/^    SOCKET sfd;$/;"	m	class:get_sfd
+show_board	board.h	/^    void show_board(FILE*fp)const{$/;"	f	class:board
+sk	judge.cpp	/^    skt sk;$/;"	m	struct:player	file:
+skt	my_socket.h	/^    skt(SOCKET f_):fd(f_){$/;"	f	class:skt
+skt	my_socket.h	/^    skt(const char *ip,int port){$/;"	f	class:skt
+skt	my_socket.h	/^    skt(skt&&b):fd(b.fd){$/;"	f	class:skt
+skt	my_socket.h	/^class skt{$/;"	c
+socklen_t	my_socket.h	/^    typedef int socklen_t;$/;"	t
+tiles_to_flip	OTP.h	/^    int x,y,pass,tiles_to_flip[27],*ed;$/;"	m	struct:history
+undo	board.h	/^    void undo(int x,int y,int pass_,const int*st,const int*ed){$/;"	f	class:board
+update	board.h	/^    int*update(int x,int y,int*oit){$/;"	f	class:board
+x	OTP.h	/^    int x,y,pass,tiles_to_flip[27],*ed;$/;"	m	struct:history
+y	OTP.h	/^    int x,y,pass,tiles_to_flip[27],*ed;$/;"	m	struct:history
+~get_sfd	my_socket.h	/^    ~get_sfd(){$/;"	f	class:get_sfd
+~skt	my_socket.h	/^    ~skt(){$/;"	f	class:skt
