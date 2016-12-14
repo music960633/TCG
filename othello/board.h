@@ -98,7 +98,7 @@ class board{
     std::swap(my_tile, op_tile);
     pass = pass_;
     for(; st != ed; ++st) {
-      a[(*st) << 3][(*st) & 7] = 3 - a[(*st) << 3][(*st) & 7];
+      a[(*st) >> 3][(*st) & 7] = 3 - a[(*st) >> 3][(*st) & 7];
     }
     if(is_on_board(x, y)) {
       a[x][y] = 0;

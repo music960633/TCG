@@ -1,10 +1,9 @@
-#include"board.h"
-#include<random>
-#ifdef _WIN32
-#include<chrono>
-#endif
-#include<cstring>
-#include<string>
+#include "board.h"
+#include "MCTS.h"
+#include <cstring>
+#include <string>
+#include <time.h>
+
 constexpr char m_tolower(char c){
     return c+('A'<=c&&c<='Z')*('a'-'A');
 }
@@ -14,15 +13,7 @@ constexpr unsigned my_hash(const char*s,unsigned long long int hv=0){
 struct history{
     int x,y,pass,tiles_to_flip[27],*ed;
 };
-template<class RIT>RIT random_choice(RIT st,RIT ed){
-#ifdef _WIN32
-    //std::random_device is deterministic with MinGW gcc 4.9.2 on Windows
-    static std::mt19937 local_rand(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-#else
-    static std::mt19937 local_rand(std::random_device{}());
-#endif
-    return st+std::uniform_int_distribution<int>(0,ed-st-1)(local_rand);
-}
+
 class OTP{
     board B;
     history H[128],*HED;
@@ -33,41 +24,16 @@ class OTP{
     }
     //choose the best move in do_genmove
     int do_genmove(){
-        /*
-          todo: use Monte-Carlo to choose move
-        */
-        int ML[64],*MLED(B.get_valid_move(ML)), sel = 64;
-        // return MLED==ML?64:*random_choice(ML,MLED);
-        const int NUM_OF_SIM = 1000;
-        int best_win = -1;
-        for (int* move = ML; move != MLED; ++move) {
-          int win = random_simulate(B, *move, NUM_OF_SIM);
-          if (win > best_win) {
-            best_win = win;
-            sel = *move;
-          }
-        }
-        printf("decision = (%d %d)\n", sel>>3, sel&7);
-        return sel;
-    }
-    int random_simulate(const board& B, int move, int numSim) {
-      int ret = 0;
-      int init_tile = B.get_my_tile();
-      int choice;
-      int dummy[64], ml[64], *mled;
-      while (numSim--) {
-        board b(B);
-        b.update(move>>3, move&7, dummy);
-        while (!b.is_game_over()) {
-          mled = b.get_valid_move(ml);
-          choice = (mled == ml ? 64 : *random_choice(ml, mled));
-          b.update(choice/8, choice%8, dummy);
-        }
-        if ((init_tile == 1 && b.get_score() > 0) || (init_tile == 2 && b.get_score() < 0))
-          ret += 1;
+      MCTS mcts(B);
+      int counter = 0;
+      clock_t st = clock();
+      while (clock() - st < CLOCKS_PER_SEC * 3) {
+        mcts.run();
+        counter += 1;
       }
-      printf("move = (%d %d), score = %d\n", move>>3, move&7, ret);
-      return ret;
+      // mcts.print();
+      printf("counter = %d\n", counter);
+      return mcts.get_best_move();
     }
     //update board and history in do_play
     void do_play(int x,int y){
