@@ -10,7 +10,7 @@
 #include <chrono>
 #endif
 
-#define NUM_SIM 300
+#define NUM_SIM 2000
 
 template<class RIT>
 RIT random_choice(RIT st, RIT ed) {
@@ -36,10 +36,17 @@ class Node {
   // functions for getting information
   int get_move() const { return move_; }
   Node* get_parent() const { return par_; }
-  float get_rate() const { return (float)nWin_ / nSim_; }
+  int get_nSim() const { return nSim_; }
+  float get_mean() const { return (float)nWin_ / nSim_; }
+  float get_var() const {
+    float mean = get_mean();
+    return (nWin_ - 2.0 * mean * nWin_) / nSim_ + mean * mean;
+  }
   float get_ucb(int N) const {
-    static const float c = 0.2;
-    return (float)nWin_ / nSim_ + c * sqrt(log(N) / nSim_);
+    static const float c = 0.5;
+    float mean = get_mean();
+    float var = get_var();
+    return mean + c * sqrt(log(N) / nSim_ * var);
   }
   bool is_leaf() const { return child_.size() == 0; }
 
@@ -63,7 +70,8 @@ class Node {
   }
 
   // functions for MCTS
-  Node* get_best_child(int totSim) const {
+  Node* get_best_child(int totSim) {
+    prune();
     assert(!is_leaf());
     if (child_.size() == 1)
       return child_[0];
@@ -78,15 +86,42 @@ class Node {
     }
     return best_node;
   }
+  void prune() {
+    for (int i = 0, n = child_.size(); i < n; ++i) {
+      if (child_[i]->get_nSim() < 200) continue;
+      for (int j = i + 1; j < n; ++j) {
+        if (child_[j]->get_nSim() < 200) continue;
+        float mean1 = child_[i]->get_mean(), d1 = sqrt(child_[i]->get_var());
+        float mean2 = child_[j]->get_mean(), d2 = sqrt(child_[j]->get_var());
+        if ((!type_ && mean1 + 3 * d1 < mean2 - 3 * d2) || (type_ && mean1 - 3 * d1 > mean2 + 3 * d2)) {
+          printf("pruned\n");
+          std::swap(child_[i], child_[n-1]);
+          delete child_[n-1];
+          child_.pop_back();
+          n -= 1;
+          i -= 1;
+          break;
+        }
+        if ((!type_ && mean1 - 3 * d1 > mean2 + 3 * d2) || (type_ && mean1 + 3 * d1 < mean2 - 3 * d2)) {
+          printf("pruned\n");
+          std::swap(child_[j], child_[n-1]);
+          delete child_[n-1];
+          child_.pop_back();
+          n -= 1;
+          j -= 1;
+        }
+      }
+    }
+  }
   int get_best_move() const {
     assert(!is_leaf());
     assert(!type_);
     if (child_.size() == 1)
       return child_[0]->get_move();
     int best_move = child_[0]->get_move();
-    float best_rate = child_[0]->get_rate();
+    float best_rate = child_[0]->get_mean();
     for (int i = 1, n = child_.size(); i < n; ++i) {
-      float tmp_rate = child_[i]->get_rate();
+      float tmp_rate = child_[i]->get_mean();
       if (tmp_rate > best_rate) {
         best_move = child_[i]->get_move();
         best_rate = tmp_rate;
@@ -109,6 +144,7 @@ class Node {
       }
       if ((tile_ == 1 && b.get_score() > 0) || (tile_ == 2 && b.get_score() < 0))
         nWin += 1;
+      inc_sim_counter();
     }
     update_parent(nSim, nWin);
   }
@@ -147,6 +183,9 @@ class Node {
     for (int i = 0, n = child_.size(); i < n; ++i)
       child_[i]->print(tab + 1, totSim);
   }
+  static void init_sim_counter() { sim_counter_ = 0; }
+  static void inc_sim_counter() { sim_counter_ += 1; }
+  static int get_sim_counter() { return sim_counter_; }
 
  private:
   bool type_;   // 0: max, 1: min
@@ -155,6 +194,7 @@ class Node {
   Node* par_;
   int nSim_, nWin_;
   std::vector<Node*> child_;
+  static int sim_counter_;
 };
 
 class MCTS {
@@ -174,7 +214,10 @@ class MCTS {
       // 2. Expansion
       target_node->gen_child(b);
       // 3. Simulation + 4. Back propagation
-      target_node->sim_child(b, NUM_SIM);
+      if (target_node == root_)
+        target_node->sim_child(b, 4 * NUM_SIM);
+      else
+        target_node->sim_child(b, NUM_SIM);
     }
     else {
       target_node->random_simulate(b, NUM_SIM);
@@ -206,5 +249,7 @@ class MCTS {
   Node* root_;
   int totSim_;
 };
+
+int Node::sim_counter_;
 
 #endif  // MCTS_H__

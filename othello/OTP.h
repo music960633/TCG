@@ -27,12 +27,13 @@ class OTP{
       MCTS mcts(B);
       int counter = 0;
       clock_t st = clock();
-      while (clock() - st < CLOCKS_PER_SEC * 3) {
+      Node::init_sim_counter();
+      while (clock() - st < CLOCKS_PER_SEC * 5) {
         mcts.run();
         counter += 1;
       }
-      // mcts.print();
-      printf("counter = %d\n", counter);
+      mcts.print();
+      printf("counter = %d\n", Node::get_sim_counter());
       return mcts.get_best_move();
     }
     //update board and history in do_play
