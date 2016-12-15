@@ -11,6 +11,8 @@
 #endif
 
 #define NUM_SIM 2000
+#define PRUNE_MIN_SIM 500
+#define C 0
 
 template<class RIT>
 RIT random_choice(RIT st, RIT ed) {
@@ -43,10 +45,9 @@ class Node {
     return (nWin_ - 2.0 * mean * nWin_) / nSim_ + mean * mean;
   }
   float get_ucb(int N) const {
-    static const float c = 0.5;
     float mean = get_mean();
     float var = get_var();
-    return mean + c * sqrt(log(N) / nSim_ * var);
+    return mean + C * sqrt(log(N) / nSim_ * var);
   }
   bool is_leaf() const { return child_.size() == 0; }
 
@@ -88,7 +89,7 @@ class Node {
   }
   void prune() {
     for (int i = 0, n = child_.size(); i < n; ++i) {
-      if (child_[i]->get_nSim() < 200) continue;
+      if (child_[i]->get_nSim() < PRUNE_MIN_SIM) continue;
       for (int j = i + 1; j < n; ++j) {
         if (child_[j]->get_nSim() < 200) continue;
         float mean1 = child_[i]->get_mean(), d1 = sqrt(child_[i]->get_var());

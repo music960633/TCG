@@ -4,6 +4,8 @@
 #include <string>
 #include <time.h>
 
+#define SEARCH_TIME 3.0
+
 constexpr char m_tolower(char c){
     return c+('A'<=c&&c<='Z')*('a'-'A');
 }
@@ -28,11 +30,11 @@ class OTP{
       int counter = 0;
       clock_t st = clock();
       Node::init_sim_counter();
-      while (clock() - st < CLOCKS_PER_SEC * 5) {
+      while (clock() - st < CLOCKS_PER_SEC * SEARCH_TIME) {
         mcts.run();
         counter += 1;
       }
-      mcts.print();
+      // mcts.print();
       printf("counter = %d\n", Node::get_sim_counter());
       return mcts.get_best_move();
     }
@@ -64,7 +66,7 @@ public:
     bool do_op(const char*cmd,char*out,FILE*myerr){
         switch(my_hash(cmd)){
             case my_hash("name"):
-                sprintf(out,"name music960633");
+                sprintf(out,"name R05921058");
                 return true;
             case my_hash("clear_board"):
                 do_init();
