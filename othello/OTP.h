@@ -4,7 +4,7 @@
 #include <string>
 #include <time.h>
 
-#define SEARCH_TIME 3.0
+#define SEARCH_TIME 9.0
 
 constexpr char m_tolower(char c){
     return c+('A'<=c&&c<='Z')*('a'-'A');

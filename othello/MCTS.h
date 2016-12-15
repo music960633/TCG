@@ -10,9 +10,9 @@
 #include <chrono>
 #endif
 
-#define NUM_SIM 2000
+#define NUM_SIM 1000
 #define PRUNE_MIN_SIM 500
-#define C 0
+#define C 0.1
 
 template<class RIT>
 RIT random_choice(RIT st, RIT ed) {
