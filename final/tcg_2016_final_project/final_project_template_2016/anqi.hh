@@ -46,8 +46,9 @@ struct MOV {
 	MOV() {}
 	MOV(POS s,POS e):st(s),ed(e) {}
 
-	bool operator==(const MOV &x) const {return st==x.st&&ed==x.ed;}
-	MOV operator=(const MOV &x) {st=x.st;ed=x.ed;return MOV(x.st, x.ed);}
+	bool operator == (const MOV &x) const { return st == x.st && ed == x.ed; }
+	MOV operator = (const MOV &x) { st = x.st; ed = x.ed; return MOV(x.st, x.ed); }
+        bool operator < (const MOV &x) const { return st*4+ed < x.st*4+x.ed; }
 };
 
 struct MOVLST {
@@ -77,6 +78,7 @@ struct BOARD {
 CLR  GetColor(FIN);    // 算出棋子的顏色
 LVL  GetLevel(FIN);    // 算出棋子的階級
 int  GetScore(FIN);    // 算出棋子的階級
+int  GetDistance(int, int);
 bool ChkEats(FIN,FIN); // 判斷第一個棋子能否吃第二個棋子
 void Output (MOV);     // 將答案傳給 GUI
 

@@ -9,6 +9,10 @@
  \*****************************************************************************/
 #include <cstdio>
 #include <cstdlib>
+#include <cassert>
+#include <algorithm>
+#include <utility>
+#include <vector>
 #include "anqi.hh"
 #include "Protocol.h"
 #include "ClientSocket.h"
@@ -50,25 +54,75 @@ SCORE Eval(const BOARD &B) {
     if (c != -1) cnt[c] += GetScore(B.fin[p]);
   }
   for (int i = 0; i < 14; i++) cnt[GetColor(FIN(i))] += B.cnt[i] * GetScore(FIN(i));
+  for (POS p1 = 0; p1 < 32; p1++) {
+    for (POS p2 = p1 + 1; p2 < 32; p2++) {
+      if (GetColor(B.fin[p1]) == 0 && GetColor(B.fin[p2]) == 1 && GetLevel(B.fin[p1]) < GetLevel(B.fin[p2]))
+        cnt[0] += (5 / GetDistance(p1, p2));
+      if (GetColor(B.fin[p1]) == 1 && GetColor(B.fin[p2]) == 0 && GetLevel(B.fin[p1]) < GetLevel(B.fin[p2]))
+        cnt[1] += (5 / GetDistance(p1, p2));
+    }
+  }
   return cnt[B.who] - cnt[B.who ^ 1];
 }
 
 // alpha-beta search
 SCORE SearchMax(const BOARD &B, SCORE alpha, SCORE beta, int dep, int cut) {
+  printf("depth = %d, who = %d, eval = %d\n", dep, B.who, Eval(B));
   if (B.ChkLose()) return -WIN;
 
   MOVLST lst;
-  if (cut == 0 || TimesUp() || B.MoveGen(lst) == 0) return Eval(B);
+  if (cut == 0 || TimesUp()) return Eval(B);
 
-  SCORE n = beta;
   SCORE m = -INF;
+  SCORE n = beta;
+  SCORE tmp;
+  int sum;
+  // move
+  B.MoveGen(lst);
+  if (lst.num == 0 && dep != 0) return Eval(B);
+  std::vector<std::pair<SCORE, MOV> > srtlst(lst.num);
   for (int i = 0; i < lst.num; i++) {
     BOARD N(B);
     N.Move(lst.mov[i]);
-    const SCORE tmp = -SearchMax(N, -beta, -m, dep+1, cut-1);
+    srtlst[i].first = Eval(N);
+    srtlst[i].second = lst.mov[i];
+  }
+  std::sort(srtlst.begin(), srtlst.end());
+  for (int i = 0; i < lst.num; i++) {
+    BOARD N(B);
+    N.Move(srtlst[i].second);
+    tmp = -SearchMax(N, -n, -std::max(m, alpha), dep+1, cut-1);
     if (tmp > m){
-      m = tmp;
-      if (dep == 0) BestMove = lst.mov[i];
+      if (n == beta || cut < 3 || tmp >= beta) {
+        m = tmp;
+      }
+      else {
+        m = -SearchMax(N, -beta, -tmp, dep+1, cut-1);
+      }
+      if (dep == 0) BestMove = srtlst[i].second;
+    }
+    if (m >= beta) return m;
+    n = std::max(m, alpha) + 1;
+  }
+  // flip
+  if (dep == 0) {
+    sum = 0;
+    for (int i = 0; i < 14; i++) sum += B.cnt[i];
+    for (POS p = 0; p < 32; p++) {
+      if (B.fin[p] != FIN_X) continue;
+      tmp = 0;
+      for (int i = 0; i < 14; i++) {
+        if (B.cnt[i] != 0) {
+          BOARD N(B);
+          N.Flip(p, FIN(i));
+          tmp += -SearchMax(N, -beta, -std::max(m, alpha), dep+1, std::max(cut - 3, 0)) * B.cnt[i];
+        }
+      }
+      tmp /= sum;
+      if (tmp > m) {
+        m = tmp;
+        if (dep == 0) BestMove = MOV(p, p);
+      }
     }
   }
   return m;
@@ -85,6 +139,8 @@ MOV Play(const BOARD &B) {
   POS p;
   int c = 0;
 
+  printf("Eval = %d\n", Eval(B));
+  printf("Who = %d\n", B.who);
   // 新遊戲？隨機翻子
   if (B.who == -1){
     p = rand() % 32;
@@ -93,18 +149,11 @@ MOV Play(const BOARD &B) {
   }
 
   // 若搜出來的結果會比現在好就用搜出來的走法
-  if (SearchMax(B, -INF, INF, 0, 5) > Eval(B)) return BestMove;
-
-  // 否則隨便翻一個地方 但小心可能已經沒地方翻了
-  for (p = 0; p < 32; p++)
-    if (B.fin[p] == FIN_X)
-      c++;
-  if (c == 0) return BestMove;
-  c = rand() % c;
-  for (p = 0; p < 32; p++)
-    if (B.fin[p] == FIN_X && --c < 0)
-      break;
-  return MOV(p, p);
+  BestMove = MOV(-1, -1);
+  SCORE result = SearchMax(B, -INF, INF, 0, 8);
+  printf("result = %d\n", result);
+  assert(BestMove.st != -1);
+  return BestMove;
 }
 
 FIN type2fin(int type) {
@@ -155,14 +204,14 @@ int main(int argc, char* argv[]) {
 #endif
 
   BOARD B;
-  if (argc!=3) {
+  if (argc!=2) {
     TimeOut = (B.LoadGame("board.txt") - 3) * 1000;
     if (!B.ChkLose()) Output(Play(B));
     return 0;
   }
   Protocol *protocol;
   protocol = new Protocol();
-  protocol->init_protocol(argv[1], atoi(argv[2]));
+  protocol->init_protocol(argv[0], atoi(argv[1]));
   int iPieceCount[14];
   char iCurrentPosition[32];
   int type, remain_time;
