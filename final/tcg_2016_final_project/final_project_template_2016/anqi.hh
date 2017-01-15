@@ -76,6 +76,7 @@ struct BOARD {
 
 CLR  GetColor(FIN);    // 算出棋子的顏色
 LVL  GetLevel(FIN);    // 算出棋子的階級
+int  GetScore(FIN);    // 算出棋子的階級
 bool ChkEats(FIN,FIN); // 判斷第一個棋子能否吃第二個棋子
 void Output (MOV);     // 將答案傳給 GUI
 

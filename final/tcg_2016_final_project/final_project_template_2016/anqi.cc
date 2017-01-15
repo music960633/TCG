@@ -45,6 +45,26 @@ LVL GetLevel(FIN f) {
   return LVL(f%7);
 }
 
+int GetScore(FIN f) {
+  switch(f) {
+    case FIN_K: return 729;
+    case FIN_G: return 243;
+    case FIN_M: return 81;
+    case FIN_R: return 27;
+    case FIN_N: return 9;
+    case FIN_C: return 50;
+    case FIN_P: return 5;
+    case FIN_k: return 729;
+    case FIN_g: return 243;
+    case FIN_m: return 81;
+    case FIN_r: return 27;
+    case FIN_n: return 9;
+    case FIN_c: return 50;
+    case FIN_p: return 5;
+    default: return 0;
+  }
+}
+
 bool ChkEats(FIN fa, FIN fb) {
   if (fa >= FIN_X) return false;
   if (fb == FIN_X) return false;
