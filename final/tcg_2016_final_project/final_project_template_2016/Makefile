@@ -2,6 +2,6 @@ LDFLAGS=-lwsock32
 # LDFLAGS=-static -s 
 .PHONY:	clean
 search.exe:	main.cc anqi.cc ClientSocket.cpp Protocol.cpp
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -O2 -o $@ $^ $(LDFLAGS)
 clean:
 	DEL search.exe 2>NUL

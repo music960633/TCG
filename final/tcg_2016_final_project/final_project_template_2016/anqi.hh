@@ -60,9 +60,11 @@ struct BOARD {
 	CLR who;     // 現在輪到那一方下
 	FIN fin[32]; // 各個位置上面擺了啥
 	int cnt[14]; // 各種棋子的未翻開數量
+        unsigned hashValue;
 
 	void NewGame();              // 開新遊戲
 	int  LoadGame(const char*);  // 載入遊戲並傳回時限(單位:秒)
+        void initHashValue();
 	void Display() const;        // 顯示到 stderr 上
 	int  MoveGen(MOVLST&) const; // 列出所有走法(走子+吃子,不包括翻子)
 	                             // 回傳走法數量
@@ -75,11 +77,21 @@ struct BOARD {
 	void Init(char Board[32], int Piece[14], int Color);
 };
 
+struct HashEntry {
+  HashEntry(): depth(-1) {}
+  int depth;
+  int score;
+  MOV move;
+  bool exact;
+};
+
 CLR  GetColor(FIN);    // 算出棋子的顏色
 LVL  GetLevel(FIN);    // 算出棋子的階級
 int  GetScore(FIN);    // 算出棋子的階級
-int  GetDistance(int, int);
+int  Distance(POS, POS);
+bool isDiagonal(POS, POS);
 bool ChkEats(FIN,FIN); // 判斷第一個棋子能否吃第二個棋子
+bool ChkGeq(FIN, FIN);
 void Output (MOV);     // 將答案傳給 GUI
 
 #endif

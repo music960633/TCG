@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <ctime>
 #include "anqi.hh"
 #ifdef _WINDOWS
 #include <windows.h>
@@ -37,6 +38,13 @@ static const POS ADJ[32][4] = {
   {29,24,-1,-1},{30,25,28,-1},{31,26,29,-1},{-1,27,30,-1}
 };
 
+static unsigned hashColor[2];
+static unsigned hashPiece[16][32];
+
+static unsigned myRand() {
+  return (rand() << 15) | rand();
+}
+
 CLR GetColor(FIN f) {
   return f < FIN_X ? f/7 : -1;
 }
@@ -46,28 +54,34 @@ LVL GetLevel(FIN f) {
   return LVL(f%7);
 }
 
-int GetDistance(POS p1, POS p2) {
+int Distance(POS p1, POS p2) {
   int x1 = p1 >> 2, y1 = p1 & 3;
   int x2 = p2 >> 2, y2 = p2 & 3;
-  return abs(x1 - x2) + abs(y1 - y2);
+  return abs(x1 - x2) + abs(y1 - y2) ;
+}
+
+bool isDiagonal(POS p1, POS p2) {
+  int x1 = p1 >> 2, y1 = p1 & 3;
+  int x2 = p2 >> 2, y2 = p2 & 3;
+  return abs(x1 - x2) == 1 && abs(y1 - y2) == 1;
 }
 
 int GetScore(FIN f) {
   switch(f) {
-    case FIN_K: return 729;
-    case FIN_G: return 243;
-    case FIN_M: return 81;
-    case FIN_R: return 27;
-    case FIN_N: return 9;
-    case FIN_C: return 3;
-    case FIN_P: return 1;
-    case FIN_k: return 729;
-    case FIN_g: return 243;
-    case FIN_m: return 81;
-    case FIN_r: return 27;
-    case FIN_n: return 9;
-    case FIN_c: return 3;
-    case FIN_p: return 1;
+    case FIN_K: return 72900;
+    case FIN_G: return 24300;
+    case FIN_M: return 8100;
+    case FIN_R: return 2700;
+    case FIN_N: return 900;
+    case FIN_C: return 2700;
+    case FIN_P: return 500;
+    case FIN_k: return 72900;
+    case FIN_g: return 24300;
+    case FIN_m: return 8100;
+    case FIN_r: return 2700;
+    case FIN_n: return 900;
+    case FIN_c: return 2700;
+    case FIN_p: return 500;
     default: return 0;
   }
 }
@@ -87,6 +101,21 @@ bool ChkEats(FIN fa, FIN fb) {
 
   return (la <= lb);
 }
+
+// true only when fa and fb are true pieces
+bool ChkGeq(FIN fa, FIN fb) {
+  if (fa >= FIN_X) return false;
+  if (fb >= FIN_X) return false;
+  if (GetColor(fb) == GetColor(fa)) return false;
+
+  const LVL la = GetLevel(fa);
+  const LVL lb = GetLevel(fb);
+  if (la == LVL_K) return (lb != LVL_P);
+  if (la == LVL_P) return (lb == LVL_K || lb == LVL_P);
+
+  return (la <= lb);
+}
+
 
 static void Output(FILE *fp, POS p) {
   fprintf(fp, "%c%d\n", 'a' + p%4, 8 - (p/4));
@@ -186,6 +215,7 @@ void BOARD::Init(char Board[32], int Piece[14], int Color) {
     }
   }
   who = Color;
+  initHashValue();
 }
 
 int BOARD::LoadGame(const char *fn) {
@@ -221,7 +251,24 @@ int BOARD::LoadGame(const char *fn) {
   }
 
   fclose(fp);
+  initHashValue();
   return r;
+}
+
+
+void BOARD::initHashValue() {
+  printf("init hash\n");
+  srand(time(NULL));
+  hashColor[0] = myRand() & 0xfffff;
+  hashColor[1] = myRand() & 0xfffff;
+  for (int i = 0; i < 16; ++i)
+    for (POS p = 0; p < 32; ++p)
+      hashPiece[i][p] = myRand() & 0xfffff;
+  hashValue = 0;
+  for (POS p = 0; p < 32; ++p) {
+    hashValue ^= hashPiece[fin[p]][p];
+  }
+  if (who != -1) hashValue ^= hashColor[who];
 }
 
 void BOARD::Display() const {
@@ -368,17 +415,24 @@ void BOARD::Flip(POS p,FIN f) {
       if((sum -= cnt[i]) < 0) break;
     f = FIN(i);
   }
+  hashValue ^= hashPiece[fin[p]][p];
   fin[p] = f;
+  hashValue ^= hashPiece[fin[p]][p];
   cnt[f]--;
   if (who == -1) who = GetColor(f);
+  else hashValue ^= hashColor[who];
   who ^= 1;
+  hashValue ^= hashColor[who];
 }
 
 void BOARD::Move(MOV m) {
   if (m.ed != m.st) {
+    hashValue = hashValue ^ hashPiece[fin[m.st]][m.st] ^ hashPiece[fin[m.ed]][m.ed];
     fin[m.ed] = fin[m.st];
     fin[m.st] = FIN_E;
+    hashValue = hashValue ^ hashPiece[fin[m.st]][m.st] ^ hashPiece[fin[m.ed]][m.ed];
     who ^= 1;
+    hashValue = hashValue ^ hashColor[0] ^ hashColor[1];
   } else {
     Flip(m.st);
   }
@@ -386,9 +440,12 @@ void BOARD::Move(MOV m) {
 
 void BOARD::DoMove(MOV m, FIN f) {
   if (m.ed != m.st) {
+    hashValue = hashValue ^ hashPiece[fin[m.st]][m.st] ^ hashPiece[fin[m.ed]][m.ed];
     fin[m.ed] = fin[m.st];
     fin[m.st] = FIN_E;
+    hashValue = hashValue ^ hashPiece[fin[m.st]][m.st] ^ hashPiece[fin[m.ed]][m.ed];
     who ^= 1;
+    hashValue = hashValue ^ hashColor[0] ^ hashColor[1];
   }
   else {
     Flip(m.st, f);
