@@ -27,7 +27,16 @@ const int DEFAULTTIME = 30;
 typedef  int SCORE;
 static const SCORE INF=10000001;
 static const SCORE WIN=10000000;
-SCORE SearchMax(const BOARD&, SCORE, SCORE, int, int, HashEntry*);
+
+struct HashEntry {
+  HashEntry(): value(0) {}
+  unsigned value;
+  int depth;
+  SCORE score;
+  bool exact;
+};
+
+SCORE SearchMax(const BOARD&, SCORE, SCORE, int, int, HashEntry*, bool);
 
 
 #ifdef _WINDOWS
@@ -48,8 +57,9 @@ bool TimesUp() {
 }
 
 // 一個重量不重質的審局函數
-SCORE Eval(const BOARD &B) {
+SCORE Eval(const BOARD &B, const BOARD &init) {
   int cnt[2] = {0, 0};
+  SCORE ret;
   for (POS p = 0; p < 32; p++) {
     const CLR c = GetColor(B.fin[p]);
     if (c != -1) cnt[c] += GetScore(B.fin[p]);
@@ -58,60 +68,78 @@ SCORE Eval(const BOARD &B) {
   for (POS p1 = 0; p1 < 32; p1++) {
     for (POS p2 = p1 + 1; p2 < 32; p2++) {
       if (GetColor(B.fin[p1]) == 0 && ChkGeq(B.fin[p1], B.fin[p2]))
-        cnt[0] += isDiagonal(p1, p2) ? 10 : 10 - Distance(p1, p2);
+        cnt[0] += isDiagonal(B, p1, p2) ? 10 : 10 - Distance(p1, p2);
       if (GetColor(B.fin[p1]) == 1 && ChkGeq(B.fin[p1], B.fin[p2]))
-        cnt[1] += isDiagonal(p1, p2) ? 10 : 10 - Distance(p1, p2);
+        cnt[1] += isDiagonal(B, p1, p2) ? 10 : 10 - Distance(p1, p2);
     }
   }
-  return cnt[B.who] - cnt[B.who ^ 1];
+  ret = cnt[B.who] - cnt[B.who ^ 1];
+  if (B == init) ret -= 3000;
+  return ret;
 }
 
 // alpha-beta search
-SCORE SearchMax(const BOARD &B, SCORE alpha, SCORE beta, int dep, int cut, HashEntry* hashTable) {
-
-  if (B.ChkLose()) return -WIN;
-
-  MOVLST lst;
-  if (cut == 0 || TimesUp()) return Eval(B);
-
+SCORE SearchMax(const BOARD &init, const BOARD &B, SCORE alpha, SCORE beta, int dep, int cut, HashEntry* hashTable, bool useHash) {
   SCORE m = -INF;
   SCORE n = beta;
   SCORE tmp;
   int sum;
+  HashEntry& entry = hashTable[B.hashValue & 0xfffff];
+  bool exact = true;
+
+  if (entry.value == B.hashValue && useHash) {
+    // printf("hash hit\n");
+    if (entry.exact) {
+      if (entry.depth >= cut)
+        return entry.score;
+      else
+        m = entry.score;
+    }
+    else
+      m = entry.score;
+  }
+  if (B.ChkLose()) return -WIN;
+
+  MOVLST lst;
+  if (cut == 0 || TimesUp()) return Eval(B, init);
+
   // move
   B.MoveGen(lst);
   if (lst.num == 0 && dep != 0) {
-    tmp = Eval(B);
+    tmp = Eval(B, init);
     // printf("depth = %d, who = %d, eval = %d\n", dep, B.who, tmp);
     return tmp;
   }
+  // move
   std::vector<std::pair<SCORE, MOV> > srtlst(lst.num);
   for (int i = 0; i < lst.num; i++) {
     BOARD N(B);
     N.Move(lst.mov[i]);
-    srtlst[i].first = Eval(N);
+    srtlst[i].first = Eval(N, init);
     srtlst[i].second = lst.mov[i];
   }
   std::sort(srtlst.begin(), srtlst.end());
   for (int i = 0; i < lst.num; i++) {
     BOARD N(B);
     N.Move(srtlst[i].second);
-    tmp = -SearchMax(N, -n, -std::max(m, alpha), dep+1, cut-1, hashTable);
+    tmp = -SearchMax(init, N, -n, -std::max(m, alpha), dep+1, cut-1, hashTable, useHash);
     if (tmp > m){
       if (n == beta || tmp >= beta) {
         m = tmp;
       }
       else {
-        m = -SearchMax(N, -beta, -tmp, dep+1, cut-1, hashTable);
+        m = -SearchMax(init, N, -beta, -tmp, dep+1, cut-1, hashTable, useHash);
       }
       if (dep == 0) BestMove = srtlst[i].second;
     }
-    if (m >= beta) break;
+    if (m >= beta) {
+      exact = false;
+      break;
+    }
     n = std::max(m, alpha) + 1;
   }
   // flip
-  if (dep == 0) {
-    printf("Flip:\n");
+  if (dep == 0 && m < beta) {
     sum = 0;
     for (int i = 0; i < 14; i++) sum += B.cnt[i];
     for (POS p = 0; p < 32; p++) {
@@ -121,7 +149,7 @@ SCORE SearchMax(const BOARD &B, SCORE alpha, SCORE beta, int dep, int cut, HashE
         if (B.cnt[i] != 0) {
           BOARD N(B);
           N.Flip(p, FIN(i));
-          tmp += -SearchMax(N, -beta, -alpha, dep+1, 3, hashTable) * B.cnt[i];
+          tmp += -SearchMax(init, N, -beta, -alpha, dep+1, 3, hashTable, false) * B.cnt[i];
         }
       }
       tmp /= sum;
@@ -129,7 +157,17 @@ SCORE SearchMax(const BOARD &B, SCORE alpha, SCORE beta, int dep, int cut, HashE
         m = tmp;
         BestMove = MOV(p, p);
       }
+      if (m >= beta) {
+        exact = false;
+        break;
+      }
     }
+  }
+  if (useHash) {
+    entry.value = B.hashValue;
+    entry.depth = cut;
+    entry.score = m;
+    entry.exact = exact;
   }
   // printf("depth = %d, who = %d, ret = %d\n", dep, B.who, m);
   return m;
@@ -156,7 +194,7 @@ MOV Play(const BOARD &B) {
   HashEntry *hashTable = new HashEntry[1<<20];
   // 若搜出來的結果會比現在好就用搜出來的走法
   BestMove = MOV(-1, -1);
-  SCORE result = SearchMax(B, -INF, INF, 0, 8, hashTable);
+  SCORE result = SearchMax(B, B, -INF, INF, 0, 6, hashTable, false);
   printf("result = %d\n", result);
   printf("(%d %d)\n", BestMove.st >> 2, BestMove.st & 3);
   assert(BestMove.st != -1);

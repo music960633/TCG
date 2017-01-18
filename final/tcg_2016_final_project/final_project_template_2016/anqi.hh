@@ -61,6 +61,14 @@ struct BOARD {
 	FIN fin[32]; // 各個位置上面擺了啥
 	int cnt[14]; // 各種棋子的未翻開數量
         unsigned hashValue;
+        
+        bool operator == (const BOARD &B) const {
+          for (POS p = 0; p < 32; ++p)
+            if (fin[p] != B.fin[p]) return false;
+          for (int i = 0; i < 14; ++i)
+            if (cnt[i] != B.cnt[i]) return false;
+          return true;
+        }
 
 	void NewGame();              // 開新遊戲
 	int  LoadGame(const char*);  // 載入遊戲並傳回時限(單位:秒)
@@ -77,19 +85,11 @@ struct BOARD {
 	void Init(char Board[32], int Piece[14], int Color);
 };
 
-struct HashEntry {
-  HashEntry(): depth(-1) {}
-  int depth;
-  int score;
-  MOV move;
-  bool exact;
-};
-
 CLR  GetColor(FIN);    // 算出棋子的顏色
 LVL  GetLevel(FIN);    // 算出棋子的階級
 int  GetScore(FIN);    // 算出棋子的階級
 int  Distance(POS, POS);
-bool isDiagonal(POS, POS);
+bool isDiagonal(const BOARD&, POS, POS);
 bool ChkEats(FIN,FIN); // 判斷第一個棋子能否吃第二個棋子
 bool ChkGeq(FIN, FIN);
 void Output (MOV);     // 將答案傳給 GUI

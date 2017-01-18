@@ -4,4 +4,4 @@ LDFLAGS=-lwsock32
 search.exe:	main.cc anqi.cc ClientSocket.cpp Protocol.cpp
 	$(CXX) -O2 -o $@ $^ $(LDFLAGS)
 clean:
-	DEL search.exe 2>NUL
+	rm search.exe

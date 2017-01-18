@@ -60,10 +60,10 @@ int Distance(POS p1, POS p2) {
   return abs(x1 - x2) + abs(y1 - y2) ;
 }
 
-bool isDiagonal(POS p1, POS p2) {
+bool isDiagonal(const BOARD& B, POS p1, POS p2) {
   int x1 = p1 >> 2, y1 = p1 & 3;
   int x2 = p2 >> 2, y2 = p2 & 3;
-  return abs(x1 - x2) == 1 && abs(y1 - y2) == 1;
+  return abs(x1 - x2) == 1 && abs(y1 - y2) == 1 && (B.fin[x1*4+y2] == FIN_E || B.fin[x2*4+y1] == FIN_E);
 }
 
 int GetScore(FIN f) {
@@ -257,13 +257,12 @@ int BOARD::LoadGame(const char *fn) {
 
 
 void BOARD::initHashValue() {
-  printf("init hash\n");
   srand(time(NULL));
-  hashColor[0] = myRand() & 0xfffff;
-  hashColor[1] = myRand() & 0xfffff;
+  hashColor[0] = myRand();
+  hashColor[1] = myRand();
   for (int i = 0; i < 16; ++i)
     for (POS p = 0; p < 32; ++p)
-      hashPiece[i][p] = myRand() & 0xfffff;
+      hashPiece[i][p] = myRand();
   hashValue = 0;
   for (POS p = 0; p < 32; ++p) {
     hashValue ^= hashPiece[fin[p]][p];
