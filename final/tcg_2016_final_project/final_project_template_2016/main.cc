@@ -23,7 +23,7 @@
 #include <ctime>
 #endif
 
-const int DEFAULTTIME = 3;
+const int DEFAULTTIME = 1;
 typedef  int SCORE;
 static const SCORE INF=10000001;
 static const SCORE WIN=10000000;
@@ -123,7 +123,7 @@ SCORE SearchMax(const BOARD &init, const BOARD &B, SCORE alpha, SCORE beta, int 
     BOARD N(B);
     N.Move(srtlst[i].second);
     tmp = -SearchMax(init, N, -n, -std::max(m, alpha) + 10, dep+1, cut-1, hashTable, useHash);
-    if (tmp > m || (tmp + 10 > m && rand() & 2)){
+    if (tmp > m){
       if (n == beta || tmp >= beta) {
         m = tmp;
       }
@@ -197,7 +197,7 @@ MOV Play(const BOARD &B) {
     HashEntry *hashTable = new HashEntry[1<<20];
     // 若搜出來的結果會比現在好就用搜出來的走法
     BestMove = MOV(-1, -1);
-    result = SearchMax(B, B, -INF, INF, 0, cut, hashTable, false);
+    result = SearchMax(B, B, -INF, INF, 0, cut, hashTable, true);
     printf("result = %d\n", result);
     printf("(%d %d)\n", BestMove.st >> 2, BestMove.st & 3);
     assert(BestMove.st != -1);
