@@ -27,6 +27,7 @@ const int DEFAULTTIME = 3;
 typedef  int SCORE;
 static const SCORE INF=10000001;
 static const SCORE WIN=10000000;
+static bool visit[1<<20];
 
 struct HashEntry {
   HashEntry(): value(0) {}
@@ -98,7 +99,7 @@ SCORE SearchMax(const BOARD &init, const BOARD &B, SCORE alpha, SCORE beta, int 
     return entry.score;
   }
   if (B.ChkLose()) return -WIN;
-  if (B == init && dep != 0) return 0;
+  if (visit[B.hashValue & 0xfffff] && dep != 0) return 0;
 
   MOVLST lst;
   if (cut == 0) return Eval(B);
@@ -182,6 +183,7 @@ MOV Play(const BOARD &B) {
   POS p;
   int cut = 1;
   SCORE result;
+  visit[B.hashValue & 0xfffff] = true;
 
   printf("who = %d\n", B.who);
   // 新遊戲？隨機翻子
@@ -275,6 +277,9 @@ int main(int argc, char* argv[]) {
   TimeOut = (DEFAULTTIME - 3) * 1000;
 
   B.Init(iCurrentPosition, iPieceCount, (color == 2) ? (-1) : (int)color);
+
+  for (int i = 0; i < (1 << 20); ++i)
+    visit[i] = false;
 
   MOV m;
   if(turn) // 我先
