@@ -1,3 +1,4 @@
+all: search judge http
 search: my_socket.h board.h OTP.h search.cpp
 	g++ -std=c++11 -DNDEBUG -O2 -Wall search.cpp -o R05921058
 judge: my_socket.h board.h judge.cpp

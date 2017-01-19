@@ -5,6 +5,7 @@
 #include<vector>
 #include<chrono>
 #include<cctype>
+#include<algorithm>
 std::string my_to_string(unsigned c,int n){
     std::string s(n,0);
     for(int i=n-1;i>=0;--i){
@@ -69,6 +70,12 @@ std::string OTP::get_html(unsigned mode,unsigned time_used)const{
         op+="<input type=\"button\" value=\"UNDO\" onclick=\"location.href='undo'\">";
     }
     int ML[64],*st(ML),*const MLED(B.get_valid_move(ML));
+    std::sort(ML, MLED);
+    printf("valid moves: ");
+    for (int* p = ML; p != MLED; ++p) {
+      printf("(%d %d) ", *p >> 3, *p & 7);
+    }
+    printf("\n");
     if(B.is_game_over() || MLED!=ML){
         op+="<input type=\"button\" value=\"PASS\">";
     }else if(mode==VS_MODE){

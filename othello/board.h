@@ -3,6 +3,7 @@
 #include <cctype>
 #include <cstdio>
 #include <algorithm>
+#include <unordered_set>
 
 inline bool is_on_board(int x, int y){
   return x >= 0 && x <= 7 && y >= 0 && y <= 7;
@@ -20,27 +21,74 @@ const std::pair<int, int> dir[] {
   std::pair<int,int>(-1, +1)
 };
 
-class board{
+class board {
+ private:
   //0=empty, 1=black, 2=white
-  unsigned char a[8][8];
+  unsigned char a[8][8], mark[8][8];
+  std::unordered_set<int> candidate;
   int my_tile, op_tile, pass;
+
+  void updateCandAdd(int x, int y) {
+    // remove (x, y)
+    candidate.erase(x << 3 | y);
+    // add new member
+    for (auto d:dir) {
+      int nx = x + d.first, ny = y + d.second;
+      if (is_on_board(nx, ny)) {
+        mark[nx][ny] += 1;
+        if (mark[nx][ny] == 1)
+          candidate.insert(nx << 3 | ny);
+      }
+    }
+  }
+  void updateCandRemove(int x, int y) {
+    // remove members
+    for (auto d:dir) {
+      int nx = x + d.first, ny = y + d.second;
+      if (is_on_board(nx, ny)) {
+        mark[nx][ny] -= 1;
+        if (mark[nx][ny] == 0)
+          candidate.erase(nx << 3 | ny);
+      }
+    }
+    candidate.insert(x << 3 | y);
+  }
  public:
   // Construct board.
-  constexpr board(): a {
-    {0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0},
-    {0,0,0,2,1,0,0,0},
-    {0,0,0,1,2,0,0,0},
-    {0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0},
-  }, my_tile(1), op_tile(2), pass(0) {}
+  board():
+    a{
+      {0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0},
+      {0,0,0,2,1,0,0,0},
+      {0,0,0,1,2,0,0,0},
+      {0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0},
+    },
+    mark{
+      {0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0},
+      {0,0,1,2,2,1,0,0},
+      {0,0,2,3,3,2,0,0},
+      {0,0,2,3,3,2,0,0},
+      {0,0,1,2,2,1,0,0},
+      {0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0},
+    },
+    my_tile(1), op_tile(2), pass(0) {
+      const int c[12] = {18,19,20,21,26,29,34,37,42,43,44,45};
+      candidate.clear();
+      for (int i = 0; i < 12; ++i)
+        candidate.insert(c[i]);
+    }
   // Construct board from code.
   board(const char* st, const char* ed) {
     if (ed - st == 66 && std::all_of(st, ed, isdigit)){
+      candidate.clear();
       for (int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
+          if (*st != '0') updateCandAdd(i,j);
           a[i][j] = (*(st++)-'0') % 3;
         }
       }
@@ -52,10 +100,13 @@ class board{
     }
   }
   // copy constructor
-  board(const board& b): my_tile(b.my_tile), op_tile(b.op_tile), pass(b.pass) {
-    for (int i = 0; i < 8; ++i)
-      for (int j = 0; j < 8; ++j)
+  board(const board& b): candidate(b.candidate), my_tile(b.my_tile), op_tile(b.op_tile), pass(b.pass) {
+    for (int i = 0; i < 8; ++i) {
+      for (int j = 0; j < 8; ++j) {
         a[i][j] = b.a[i][j];
+        mark[i][j] = b.mark[i][j];
+      }
+    }
   }
   // Updates board with move (x,y) and copies flipped locations to an array
   // start from oit.
@@ -67,7 +118,7 @@ class board{
   int* update(int x, int y, int* oit) {
     if (is_on_board(x, y)) {
       a[x][y] = my_tile;
-      for(auto d:dir){
+      for (auto d:dir){
         auto nx = x, ny = y;
         do {
           nx += d.first;
@@ -83,6 +134,7 @@ class board{
         }
       }
       pass = 0;
+      updateCandAdd(x, y);
     } else{
       pass += 1;
     }
@@ -102,6 +154,7 @@ class board{
     }
     if(is_on_board(x, y)) {
       a[x][y] = 0;
+      updateCandRemove(x, y);
     }
   }
   // Check whether move (x,y) is legal.
@@ -113,7 +166,7 @@ class board{
     if(x == 8 && y == 0) {
       int b[64];
       return b == get_valid_move(b);
-    } else if(is_on_board(x,y ) ==0 || a[x][y] != 0) {
+    } else if(is_on_board(x, y) ==0 || a[x][y] != 0) {
       return false;
     }
     for(auto d:dir){
@@ -122,7 +175,7 @@ class board{
         do {
           nx += d.first;
           ny += d.second;
-        } while(is_on_board(nx ,ny) && a[nx][ny] == op_tile);
+        } while(is_on_board(nx, ny) && a[nx][ny] == op_tile);
         if (is_on_board(nx, ny) && a[nx][ny] == my_tile){
           return true;
         }
@@ -137,11 +190,10 @@ class board{
   // Return value
   // Pointer to the legal moves, one past the last move generated.
   int* get_valid_move(int* oit) const {
-    for (int i = 0; i < 8; ++i) {
-      for (int j = 0; j < 8; ++j) {
-        *oit = (i << 3) | j;
-        oit += (a[i][j] == 0 && is_valid_move(i, j));
-      }
+    for (const auto& c: candidate) {
+      int x = c >> 3, y = c & 7;
+      *oit = c;
+      oit += (a[x][y] == 0 && is_valid_move(x, y));
     }
     return oit;
   }
@@ -188,6 +240,12 @@ class board{
   }
   bool is_game_over() const {
     return (pass == 2);
+  }
+  void displayCand() const {
+    printf("candidate: ");
+    for (const auto& c: candidate)
+      printf("(%d %d) ", c >> 3, c & 7);
+    printf("\n");
   }
 };
 
