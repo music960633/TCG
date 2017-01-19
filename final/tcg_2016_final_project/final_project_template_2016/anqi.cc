@@ -73,15 +73,15 @@ int GetScore(FIN f) {
     case FIN_M: return 8100;
     case FIN_R: return 2700;
     case FIN_N: return 900;
-    case FIN_C: return 2700;
-    case FIN_P: return 500;
+    case FIN_C: return 8000;
+    case FIN_P: return 1000;
     case FIN_k: return 72900;
     case FIN_g: return 24300;
     case FIN_m: return 8100;
     case FIN_r: return 2700;
     case FIN_n: return 900;
-    case FIN_c: return 2700;
-    case FIN_p: return 500;
+    case FIN_c: return 8000;
+    case FIN_p: return 1000;
     default: return 0;
   }
 }
@@ -215,7 +215,7 @@ void BOARD::Init(char Board[32], int Piece[14], int Color) {
     }
   }
   who = Color;
-  initHashValue();
+  initHashValue(true);
 }
 
 int BOARD::LoadGame(const char *fn) {
@@ -242,6 +242,8 @@ int BOARD::LoadGame(const char *fn) {
   who = (r == 0 || r == 1 ? r : -1);
   fscanf(fp, " %*c%*s%d ", &r);
 
+  initHashValue(true);
+
   for (char buf[64]; fgets(buf, sizeof(buf), fp); ) {
     if (buf[2] < '0' || buf[2] > '9') break;
     char xxx[16], yyy[16];
@@ -251,18 +253,19 @@ int BOARD::LoadGame(const char *fn) {
   }
 
   fclose(fp);
-  initHashValue();
   return r;
 }
 
 
-void BOARD::initHashValue() {
-  srand(time(NULL));
-  hashColor[0] = myRand();
-  hashColor[1] = myRand();
-  for (int i = 0; i < 16; ++i)
-    for (POS p = 0; p < 32; ++p)
-      hashPiece[i][p] = myRand();
+void BOARD::initHashValue(bool reset) {
+  if (reset) {
+    srand(time(NULL));
+    hashColor[0] = myRand();
+    hashColor[1] = myRand();
+    for (int i = 0; i < 16; ++i)
+      for (POS p = 0; p < 32; ++p)
+        hashPiece[i][p] = myRand();
+  }
   hashValue = 0;
   for (POS p = 0; p < 32; ++p) {
     hashValue ^= hashPiece[fin[p]][p];

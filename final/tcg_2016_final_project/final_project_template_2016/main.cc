@@ -23,7 +23,7 @@
 #include <ctime>
 #endif
 
-const int DEFAULTTIME = 30;
+const int DEFAULTTIME = 3;
 typedef  int SCORE;
 static const SCORE INF=10000001;
 static const SCORE WIN=10000000;
@@ -37,6 +37,11 @@ struct HashEntry {
 };
 
 SCORE SearchMax(const BOARD&, SCORE, SCORE, int, int, HashEntry*, bool);
+SCORE score[16];
+
+void initScore(const BOARD& B) {
+  score[0] = 3;
+}
 
 
 #ifdef _WINDOWS
@@ -57,28 +62,30 @@ bool TimesUp() {
 }
 
 // 一個重量不重質的審局函數
-SCORE Eval(const BOARD &B, const BOARD &init) {
+SCORE Eval(const BOARD &B) {
+  int sum = 0;
   int cnt[2] = {0, 0};
   SCORE ret;
   for (POS p = 0; p < 32; p++) {
     const CLR c = GetColor(B.fin[p]);
-    if (c != -1) cnt[c] += GetScore(B.fin[p]);
+    if (c != -1) {
+      sum += 1;
+      cnt[c] += GetScore(B.fin[p]);
+    }
   }
   for (int i = 0; i < 14; i++) cnt[GetColor(FIN(i))] += B.cnt[i] * GetScore(FIN(i));
   for (POS p1 = 0; p1 < 32; p1++) {
     for (POS p2 = p1 + 1; p2 < 32; p2++) {
       if (GetColor(B.fin[p1]) == 0 && ChkGeq(B.fin[p1], B.fin[p2]))
-        cnt[0] += isDiagonal(B, p1, p2) ? 10 : 10 - Distance(p1, p2);
+        cnt[0] += (isDiagonal(B, p1, p2) ? 10 : 10 - Distance(p1, p2));
       if (GetColor(B.fin[p1]) == 1 && ChkGeq(B.fin[p1], B.fin[p2]))
-        cnt[1] += isDiagonal(B, p1, p2) ? 10 : 10 - Distance(p1, p2);
+        cnt[1] += (isDiagonal(B, p1, p2) ? 10 : 10 - Distance(p1, p2));
     }
   }
-  ret = cnt[B.who] - cnt[B.who ^ 1];
-  if (B == init) ret -= 3000;
-  return ret;
+  return cnt[B.who] - cnt[B.who ^ 1];
 }
 
-// alpha-beta search
+// negascout search
 SCORE SearchMax(const BOARD &init, const BOARD &B, SCORE alpha, SCORE beta, int dep, int cut, HashEntry* hashTable, bool useHash) {
   SCORE m = -INF;
   SCORE n = beta;
@@ -87,27 +94,19 @@ SCORE SearchMax(const BOARD &init, const BOARD &B, SCORE alpha, SCORE beta, int 
   HashEntry& entry = hashTable[B.hashValue & 0xfffff];
   bool exact = true;
 
-  if (entry.value == B.hashValue && useHash) {
-    // printf("hash hit\n");
-    if (entry.exact) {
-      if (entry.depth >= cut)
-        return entry.score;
-      else
-        m = entry.score;
-    }
-    else
-      m = entry.score;
+  if (entry.value == B.hashValue && entry.depth == cut && useHash) {
+    return entry.score;
   }
   if (B.ChkLose()) return -WIN;
+  if (B == init && dep != 0) return 0;
 
   MOVLST lst;
-  if (cut == 0 || TimesUp()) return Eval(B, init);
+  if (cut == 0) return Eval(B);
 
   // move
   B.MoveGen(lst);
   if (lst.num == 0 && dep != 0) {
-    tmp = Eval(B, init);
-    // printf("depth = %d, who = %d, eval = %d\n", dep, B.who, tmp);
+    tmp = Eval(B);
     return tmp;
   }
   // move
@@ -115,15 +114,15 @@ SCORE SearchMax(const BOARD &init, const BOARD &B, SCORE alpha, SCORE beta, int 
   for (int i = 0; i < lst.num; i++) {
     BOARD N(B);
     N.Move(lst.mov[i]);
-    srtlst[i].first = Eval(N, init);
+    srtlst[i].first = Eval(N);
     srtlst[i].second = lst.mov[i];
   }
   std::sort(srtlst.begin(), srtlst.end());
   for (int i = 0; i < lst.num; i++) {
     BOARD N(B);
     N.Move(srtlst[i].second);
-    tmp = -SearchMax(init, N, -n, -std::max(m, alpha), dep+1, cut-1, hashTable, useHash);
-    if (tmp > m){
+    tmp = -SearchMax(init, N, -n, -std::max(m, alpha) + 10, dep+1, cut-1, hashTable, useHash);
+    if (tmp > m || (tmp + 10 > m && rand() & 2)){
       if (n == beta || tmp >= beta) {
         m = tmp;
       }
@@ -163,11 +162,10 @@ SCORE SearchMax(const BOARD &init, const BOARD &B, SCORE alpha, SCORE beta, int 
       }
     }
   }
-  if (useHash) {
+  if (useHash && exact) {
     entry.value = B.hashValue;
     entry.depth = cut;
     entry.score = m;
-    entry.exact = exact;
   }
   // printf("depth = %d, who = %d, ret = %d\n", dep, B.who, m);
   return m;
@@ -176,14 +174,16 @@ SCORE SearchMax(const BOARD &init, const BOARD &B, SCORE alpha, SCORE beta, int 
 MOV Play(const BOARD &B) {
 #ifdef _WINDOWS
   Tick = GetTickCount();
-  TimeOut = (DEFAULTTIME - 3) * 1000;
+  TimeOut = DEFAULTTIME * 1000;
 #else
   Tick = clock();
-  TimeOut = (DEFAULTTIME - 3) * CLOCKS_PER_SEC;
+  TimeOut = DEFAULTTIME * CLOCKS_PER_SEC;
 #endif
   POS p;
-  int c = 0;
+  int cut = 1;
+  SCORE result;
 
+  printf("who = %d\n", B.who);
   // 新遊戲？隨機翻子
   if (B.who == -1){
     p = rand() % 32;
@@ -191,14 +191,17 @@ MOV Play(const BOARD &B) {
     return MOV(p, p);
   }
 
-  HashEntry *hashTable = new HashEntry[1<<20];
-  // 若搜出來的結果會比現在好就用搜出來的走法
-  BestMove = MOV(-1, -1);
-  SCORE result = SearchMax(B, B, -INF, INF, 0, 6, hashTable, false);
-  printf("result = %d\n", result);
-  printf("(%d %d)\n", BestMove.st >> 2, BestMove.st & 3);
-  assert(BestMove.st != -1);
-  delete hashTable;
+  do {
+    HashEntry *hashTable = new HashEntry[1<<20];
+    // 若搜出來的結果會比現在好就用搜出來的走法
+    BestMove = MOV(-1, -1);
+    result = SearchMax(B, B, -INF, INF, 0, cut, hashTable, false);
+    printf("result = %d\n", result);
+    printf("(%d %d)\n", BestMove.st >> 2, BestMove.st & 3);
+    assert(BestMove.st != -1);
+    delete hashTable;
+    cut += 1;
+  } while (!TimesUp() && result != WIN);
   return BestMove;
 }
 
